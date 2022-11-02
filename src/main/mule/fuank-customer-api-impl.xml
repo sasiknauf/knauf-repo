@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:azure-cosmos-db-connector-mule-4="http://www.mulesoft.org/schema/mule/azure-cosmos-db-connector-mule-4" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/azure-cosmos-db-connector-mule-4 http://www.mulesoft.org/schema/mule/azure-cosmos-db-connector-mule-4/current/mule-azure-cosmos-db-connector-mule-4.xsd">
+	<sub-flow name="fuank-customer-api-createCustomerImpl" doc:id="13381141-f0bd-4585-b5fa-da16aebbe4c6" >
+		<logger level="INFO" doc:name="Logger" doc:id="623079b1-f37c-4cb1-92cf-29e72c2701ec" />
+		<ee:transform doc:name="Transform Message" doc:id="d1973043-3bdf-4a77-ba1e-a955189a2ad2" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="custId" ><![CDATA[uuid()]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<scatter-gather doc:name="Scatter-Gather for Processing Salesforce &amp; Cosmo DB" doc:id="176d8683-91db-446a-8154-02f2f9a6ec0a" >
+			<route >
+			<ee:transform doc:name="Transform Message" doc:id="f7f775e6-aef4-4ab1-9998-9a0f78475d31">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+  "customerId__c": vars.custId,
+  "Name": payload.firstName ++ payload.lastName,
+  "firstName__c": payload.firstName,
+  "lastName__c": payload.lastName,
+  "companyName__c": payload.companyName,
+  "email__c": payload.email,
+  "phone__c": payload.phone
+}]
+]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				<until-successful maxRetries="${retry.maxRetries}" doc:name="Until Successful" doc:id="0ed73afc-4b7c-4df7-96f6-d8931985d10d" millisBetweenRetries="${retry.delayInMillisec}">
+					
+					<salesforce:create doc:name="Create Customer in Salesforce" doc:id="8e372075-2478-4bde-bf8d-634139098273" config-ref="Salesforce_Config" type="Customer" >
+						<reconnect />
+					</salesforce:create>
+				</until-successful>
+			</route>
+			<route >
+				<ee:transform doc:name="Transform Message" doc:id="c3860fc5-8c5e-404a-a702-b14aee8b2060" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "id": vars.custId,
+  "customerId": vars.custId,
+  "personalInformation": {
+  	"firstName": payload.firstName,
+  	"lastName": payload.lastName,
+  	"companyName": payload.companyName,
+  	"email": payload.email,
+  	"phone": payload.phone
+  },
+  "address": payload.address
+}
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				 <until-successful maxRetries="${retry.maxRetries}" doc:name="Until Successful" doc:id="39b60667-50cb-402d-bad0-34e739938de8" millisBetweenRetries="${retry.delayInMillisec}">
+					<azure-cosmos-db-connector-mule-4:create-document doc:name="Create Document" doc:id="c9f15da8-a3ee-4273-8110-7f8f2bed7e5e" config-ref="Azure_Cosmos_Db_Key_Token_Config" dbIdUriParam="testdb" collIdUriParam="testcontainer" xMsDocumentdbPartitionkeyHeader="#[write([payload.customerId],'application/json')]" xMsIndexingDirectiveHeader="INCLUDE">
+						<reconnect />
+					</azure-cosmos-db-connector-mule-4:create-document>
+				</until-successful>
+			</route> 
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="3bcc86e6-7d05-4c6c-a069-0fab5c42e56b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if (payload."0".payload.successful == true and payload."1".attributes.statusCode == 201) {
+    ("id"): vars.custId,
+  ("message"): "Customer details created successfully"
+} else {
+	("id"): "",
+  ("message"): "Unable to create Customer details"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c8af17f8-27e6-489a-93c8-2d139497c53f" message="Customer details created successfully"/>
+	</sub-flow>
+	<sub-flow name="fuank-customer-api-updateCustomerImpl" doc:id="bacd1ac1-b6c8-48a4-9bd1-beee17db6d4f" >
+		<logger level="INFO" doc:name="Logger" doc:id="4e438904-1245-48ff-9b9f-731300954d2e" />
+		<scatter-gather doc:name="Scatter-Gather" doc:id="382ef2bf-d2ac-460e-81fb-daa639aebb0d" >
+			<route >
+				<salesforce:query doc:name="Query" doc:id="bfb31df3-a6d5-4b25-acea-d01676819385" config-ref="Salesforce_Config" target="sfId">
+					<salesforce:salesforce-query><![CDATA[SELECT ID FROM Customer WHERE customerId__c = ':customerId']]></salesforce:salesforce-query>
+					<salesforce:parameters><![CDATA[#[{
+	"customerId": payload.customerId
+}]]]></salesforce:parameters>
+				</salesforce:query>
+				<logger level="INFO" doc:name="Logger" doc:id="6ffbbb19-a18e-4b6a-8dfc-bb2bf9b0f622" message="#[output application/json --- vars.sfId]"/>
+				<choice doc:name="Choice" doc:id="95843280-1199-4f55-a76f-dbbeaf23d9b7" >
+					<when expression="#[vars.sfId != null]">
+						<ee:transform doc:name="Transform Message" doc:id="3e8723d7-099e-4101-ac83-42e0787542d2">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+  "id": vars.sfId.Id,
+  "customerId__c": payload.customerId,
+  "name": payload.firstName ++ payload.lastName,
+   "firstName__c": payload.firstName,
+  "lastName__c": payload.lastName,
+  "companyName__c": payload.companyName,
+  "email__c": payload.email,
+  "phone__c": payload.phone
+}]
+
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+						<until-successful maxRetries="${retry.maxRetries}" doc:name="Until Successful" doc:id="dfd7b1c3-a996-4ee4-8bd1-d609ea62ed8e" millisBetweenRetries="${retry.delayInMillisec}">
+					<salesforce:update doc:name="Update" doc:id="1367a364-995a-44ab-9f3e-cac81a57fbcb" config-ref="Salesforce_Config" type="Customer">
+						<reconnect />
+					</salesforce:update>
+				</until-successful>
+					</when>
+					<otherwise >
+						<raise-error doc:name="Raise error" doc:id="f840113a-b514-4523-81b1-b5df83175968" type="APP:NO_RECORD_FOUND" description="No record found"/>
+					</otherwise>
+				</choice>
+			</route>
+			<route >
+				<azure-cosmos-db-connector-mule-4:get-document doc:name="Get Document" doc:id="5ba661e0-f0b8-4c37-93ea-70e38bb6a9d9" config-ref="Azure_Cosmos_Db_Key_Token_Config" dbIdUriParam="testdb" collIdUriParam="testcontainer" docIdUriParam="#[payload.customerId]" target="cosmosResp" xMsDocumentdbPartitionkeyHeader="#[write([payload.customerId],'application/json')]" xMsConsistencyLevelHeader="SESSION"/>
+				<logger level="INFO" doc:name="Logger" doc:id="6f7445bf-ee5c-4266-8869-bdd11e09bb58" message="#[vars.cosmosResp]"/>
+				<choice doc:name="Choice" doc:id="9a49f30c-a4a2-46a9-822d-17ebcd6bf3c6" >
+					<when expression="#[vars.cosmosResp != null]">
+						<ee:transform doc:name="Transform Message" doc:id="f24fe9df-1f8c-41e5-a63b-11dc173ba397">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"id": payload.customerId,
+  "customerId": payload.customerId,
+  "personalInformation": {
+  	"firstName": payload.firstName,
+  	"lastName": payload.lastName,
+  	"companyName": payload.companyName,
+  	"email": payload.email,
+  	"phone": payload.phone
+  },
+  "address": payload.addressInformation
+  
+}
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+						<until-successful maxRetries="${retry.maxRetries}" doc:name="Until Successful" doc:id="05fe6b2c-d3ff-45e7-9ad5-5d678a6b32e0" millisBetweenRetries="${retry.delayInMillisec}">
+							<azure-cosmos-db-connector-mule-4:replace-document doc:name="Replace Document" doc:id="efd3e69b-8af1-4003-b436-0d9b648c0063" config-ref="Azure_Cosmos_Db_Key_Token_Config" dbIdUriParam="testdb" collIdUriParam="testcontainer" xMsIndexingDirectiveHeader="INCLUDE" xMsDocumentdbPartitionkeyHeader="#[write([payload.customerId],'application/json')]" docIdUriParam="#[payload.customerId]">
+						<reconnect />
+					</azure-cosmos-db-connector-mule-4:replace-document>
+				</until-successful>
+					</when>
+					<otherwise >
+						<raise-error doc:name="Raise error" doc:id="2badd8ec-fef3-4871-9f05-c1ffd1e437de" type="APP:NO_RECORD_FOUND" description="No record found"/>
+					</otherwise>
+				</choice>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="51d46afa-8fe0-4c79-b8c8-479900f765b2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if (payload."0".payload.successful == true and payload."1".attributes.statusCode == 200) {
+    ("id"): vars.custId,
+  ("message"): "Customer details updated successfully"
+} else {
+	("id"): "",
+  ("message"): "Unable to update Customer details"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="4f392594-511f-480b-a5ae-8ce5d3a9caf9" message="Customer Details updated successfully"/>
+	</sub-flow>
+	<sub-flow name="fuank-customer-api-getCustomerImpl" doc:id="7bdd5f77-640d-404f-8ecc-f5afb93b461d" >
+		<logger level="INFO" doc:name="Logger" doc:id="5f028e3d-d9c7-4647-ac2b-187254f4345a" message="Customer ID: #[attributes.queryParams.customerId]"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="8bf465ac-ab33-443c-bcfa-b404cb9ad00c" >
+			<route >
+				<until-successful doc:name="Until Successful" doc:id="c0867bfc-e469-4609-a767-c609d308a7d2" maxRetries="${retry.maxRetries}" millisBetweenRetries="${retry.delayInMillisec}">
+					<salesforce:query doc:name="Query" doc:id="6fb8dce8-870f-4563-8e6d-e2024c0ba0f2" config-ref="Salesforce_Config" >
+						<reconnect />
+						<salesforce:salesforce-query ><![CDATA[SELECT CustomerId__c, FirstName__c, LastName__c, CompanyName__c, Email__c, Phone__c FROM Customer
+WHERE customerId__c = ':customerId']]></salesforce:salesforce-query>
+						<salesforce:parameters ><![CDATA[#[{
+	"customerId": attributes.queryParams.customerId
+}]]]></salesforce:parameters>
+					</salesforce:query>
+				</until-successful>
+			</route>
+			<route >
+				<until-successful maxRetries="${retry.maxRetries}" doc:name="Until Successful" doc:id="1f9e7e71-409b-4954-9e59-9c8efb4d611d" millisBetweenRetries="${retry.delayInMillisec}">
+					<azure-cosmos-db-connector-mule-4:get-document doc:name="Get Document" doc:id="243743c5-4f3f-4052-a524-9228b2c87805" config-ref="Azure_Cosmos_Db_Key_Token_Config" dbIdUriParam="testdb" collIdUriParam="testcontainer" docIdUriParam="#[attributes.queryParams.customerId]" xMsConsistencyLevelHeader="SESSION" xMsDocumentdbPartitionkeyHeader="#[write([attributes.queryParams.customerId],'application/json')]">
+						<reconnect />
+					</azure-cosmos-db-connector-mule-4:get-document>
+				</until-successful>
+			</route>
+		</scatter-gather>
+		<logger level="INFO" doc:name="Logger" doc:id="c177ae81-cbda-4612-9b7f-961e480762eb" message="Response:  #[output application/json --- payload]"/>
+		<choice doc:name="Choice" doc:id="1f50b723-a5bf-4ccd-a217-05c5b72ed8f2" >
+			<when expression='#[payload."0".payload[0] != null and payload."1".attributes.statusCode == 200]'>
+				<ee:transform doc:name="Transform Message" doc:id="5e4b704b-509b-4db8-a6ad-0f55b23a08b2">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "customerId": payload."0".payload[0].customerId__c,
+  "firstName": payload."0".payload[0].FirstName__c,
+  "lastName": payload."0".payload[0].LastName__c,
+  "companyName": payload."0".payload[0].CompanyName__c,
+  "email": payload."0".payload[0].Email__c,
+  "phone": payload."0".payload[0].Phone__c,
+  "address": payload."1".payload.address
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="ec390b42-24c2-4a93-97f2-09c014d4f1ec" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"message": "Unable to get Customer details"
+}
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="2b97130b-1b18-4318-bfd1-259eedc25ec6" message="Get Customer is Completed"/>
+	</sub-flow>
+</mule>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd ">
+    <http:listener-config name="fuank-customer-api-httpListenerConfig">
+        <http:listener-connection host="localhost" port="8081" />
+    </http:listener-config>
+    <apikit:config name="fuank-customer-api-config" api="resource::cfe0dbcd-17c9-4189-a3e1-a66e2c3f5764:fuank-customer-api:1.0.1:raml:zip:fuank-customer-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="fuank-customer-api-main">
+        <http:listener config-ref="fuank-customer-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="fuank-customer-api-config" />
+		<error-handler ref="global-error-handler" />
+        
+    </flow>
+    <flow name="put:\customer:application\json:fuank-customer-api-config">
+		<flow-ref doc:name="Flow Reference" doc:id="ddfa7e27-7df3-47a2-bea9-1439a07e814b" name="fuank-customer-api-updateCustomerImpl"/>
+    </flow>
+    <flow name="get:\customer:fuank-customer-api-config">
+        <flow-ref doc:name="Flow Reference" doc:id="630d7c0c-1c25-4d8e-917a-ec3ce2180072" name="fuank-customer-api-getCustomerImpl"/>
+    </flow>
+    <flow name="post:\customer:application\json:fuank-customer-api-config">
+		<flow-ref doc:name="Flow Reference" doc:id="51aaf7ce-fef0-461b-ac47-215d6962dd89" name="fuank-customer-api-createCustomerImpl"/>
+    </flow>
+</mule>

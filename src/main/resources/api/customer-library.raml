@@ -1,0 +1,159 @@
+#%RAML 1.0 Library
+usage: This customer library is used to receive the request.
+types:
+  createCustomerRequest:
+    displayName: Create Customer Request
+    type: object
+    properties:
+      customerId:
+        required: false
+        displayName: Customer Id
+        type: string
+      firstName:
+        required: true
+        displayName: First Name
+        type: string
+      lastName:
+        required: true
+        displayName: First Name
+        type: string
+      companyName: 
+        required: true
+        displayName: Company Name
+        type: string
+      email: 
+        required: true
+        displayName: Customer's Email
+        type: string
+      phone: 
+        required: true
+        displayName: Customer's Phone Number
+        type: string
+      address:
+        type: array 
+        required: false
+        items:
+          type: AddressInformation
+  AddressInformation:
+    displayName: Customer's Address information
+    type: object
+    properties:
+      street:
+        required: true
+        displayName: Street
+        type: string
+      houseNumber:
+        required: true
+        displayName: House Number
+        type: number
+      city:
+        required: true
+        displayName: City
+        type: string
+      country:
+        required: true
+        displayName: Country
+        type: string
+      postalCode:
+        required: true
+        displayName: Postal code
+        type: string
+  createCustomerResponse:
+    displayName: Create Customer Response
+    type: object
+    properties:
+      id:
+        required: true
+        displayName: Customer Id
+        type: string
+      message:
+        required: true
+        displayName: Message
+        type: string
+  updateCustomerRequest:
+    displayName: Create Customer Request
+    type: object
+    properties:
+      customerId:
+        required: true
+        displayName: Customer Id
+        type: string
+      firstName:
+        required: false
+        displayName: First Name
+        type: string
+      lastName:
+        required: false
+        displayName: First Name
+        type: string
+      companyName: 
+        required: false
+        displayName: Company Name
+        type: string
+      email: 
+        required: false
+        displayName: Customer's Email
+        type: string
+      phone: 
+        required: false
+        displayName: Customer's Phone Number
+        type: string
+      address:
+        type: array 
+        required: false
+        items:
+          type: AddressInformation
+  updateCustomerResponse:
+    displayName: Update Customer Response
+    type: object
+    properties:
+      id:
+        required: true
+        displayName: Customer Id
+        type: string
+      message:
+        required: true
+        displayName: Message
+        type: string
+  errorResponse:
+    displayName: Error Response
+    type: object
+    properties:
+      errorMessage:
+        required: true
+        displayName: Error Message
+        type: string
+  getCustomerResponse:
+    displayName: Get Customer Response
+    type: object
+    properties:
+      customerId:
+        required: true
+        displayName: Customer Id
+        type: string
+      firstName:
+        required: true
+        displayName: First Name
+        type: string
+      lastName:
+        required: true
+        displayName: First Name
+        type: string
+      companyName: 
+        required: true
+        displayName: Company Name
+        type: string
+      email: 
+        required: true
+        displayName: Customer's Email
+        type: string
+      phone: 
+        required: true
+        displayName: Customer's Phone Number
+        type: string
+      address:
+        type: array 
+        required: false
+        items:
+          type: AddressInformation
+  

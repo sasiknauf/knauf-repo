@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:azure-cosmos-db-connector-mule-4="http://www.mulesoft.org/schema/mule/azure-cosmos-db-connector-mule-4"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/azure-cosmos-db-connector-mule-4 http://www.mulesoft.org/schema/mule/azure-cosmos-db-connector-mule-4/current/mule-azure-cosmos-db-connector-mule-4.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="186ed630-faf7-42aa-8359-e1a784b164a7" >
+		<salesforce:basic-connection username="${sf.username}" password="${secure::sf.password}" securityToken="${secure::sf.securityToken}" url="${sf.endpointURL}" />
+	</salesforce:sfdc-config>
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="a6f0ceb0-e351-40ca-a4ac-6427ae9252ea" file="properties/${mule.env}.yaml" key="${encryption.key}">
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="20a93cf8-0d30-4424-9653-c722de8f4c1e" file="properties/${mule.env}.yaml" />
+	<azure-cosmos-db-connector-mule-4:key-token-config name="Azure_Cosmos_Db_Key_Token_Config" doc:name="Azure Cosmos Db Key Token Config" doc:id="af6580c1-5080-4df4-a48d-64036af73881" >
+		<azure-cosmos-db-connector-mule-4:key-token-auth-connection baseUri="${cosmosDB.accountURL}" key="${secure::cosmosDB.keyToken}" version="${cosmosDB.version}" />
+	</azure-cosmos-db-connector-mule-4:key-token-config>
+	<global-property doc:name="Global Property" doc:id="52155807-f6e3-4188-9738-361898647760" name="mule.env" value="${mule.env}" />
+</mule>

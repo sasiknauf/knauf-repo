@@ -1,0 +1,15 @@
+api:
+  autodiscoveryId: "18259592"
+retry:
+  maxRetries: "1"
+  delayInMillisec: "60000"
+  
+sf:
+  username: "integration-sf@liyacorp.dev"
+  password: "![E38/z1TQUy+qa79E7LXinQ==]"
+  securityToken: "![bV6vpheMM1Jp/HhuwTea3/MCQSE9ge2kQTgJq0pSvF8=]"
+  endpointURL: "https://liyacorp-dev-ed.my.salesforce.com/services/Soap/u/56.0"
+cosmosDB:
+  accountURL: "https://sasiknauf.documents.azure.com:443/"
+  keyToken: "![Bpm9BnjT6ovupMdD19+D5eiiPaSmgTkpMxAJTCwB9Xa03D2VN7XuZNhATVuPUh2bi5XK47BL+9fq/DkeJb6gVL1ZxCjWHF4cPuvtjYH6gpjPweijxIlo19T7kSi7pO2v]"
+  version: "2015-04-08"

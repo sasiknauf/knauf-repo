@@ -1,0 +1,77 @@
+#%RAML 1.0
+title: Customer API
+
+version: 1.0
+uses:
+  customer-object: customer-library.raml
+traits:
+  client-id-required:
+    headers:
+      client_id:
+        type: string
+        description: client Id provided by API Manager
+        required: true
+      client_secret:
+        type: string
+        required: true
+        description: The Client secret key provided by the API Manager
+    responses:
+      401:
+        description: Unauthorized or invalid client application credentials
+      500:
+        description: Bad response from authorization server, or WSDL SOAP Fault error
+        
+/customer:
+  post:
+    is:
+      - client-id-required
+    description: Create a customer
+    body:
+      application/json:
+        type:  customer-object.createCustomerRequest
+    responses:
+      200:
+        body:
+          application/json:
+            type: customer-object.createCustomerResponse
+      500:
+        body:
+          application/json:
+            type: customer-object.errorResponse
+  put:
+    description: Update a customer
+    is:
+      - client-id-required
+    body:
+      application/json:
+        type:  customer-object.updateCustomerRequest
+    responses:
+      200:
+        body:
+          application/json:
+            type: customer-object.updateCustomerResponse
+      500:
+        body:
+          application/json:
+            type: customer-object.errorResponse
+  get:
+    description: Get Customer Details
+    is:
+      - client-id-required
+    queryParameters:
+      customerId:
+        required: true
+        displayName: Customer Id
+        type: string
+        minLength: 3
+        example: 4d4de7d6-7f5e-4778-9c70-babba6c25c55
+    responses:
+      200:
+        body:
+          application/json:
+            type: customer-object.getCustomerResponse
+      500:
+        body:
+          application/json:
+            type: customer-object.errorResponse
+      
